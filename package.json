@@ -16,8 +16,7 @@
   "dependencies": {
     "bignumber.js": "^4.1.0",
     "rethinkdb": "^2.3.3",
-    "xcraft-core-goblin": "^2.0.0",
-    "xcraft-core-converters": "1.0.0"
+    "xcraft-core-goblin": "^2.0.0"
   },
   "devDependencies": {
     "xcraft-dev-rules": "^0.1.8"
