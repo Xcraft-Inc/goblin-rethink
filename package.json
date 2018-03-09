@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "Samuel Loup",
   "license": "MIT",
   "config": {
     "xcraft": {
@@ -14,8 +14,6 @@
     }
   },
   "dependencies": {
-    "remove-markdown": "^0.2.2",
-    "bignumber.js": "^4.1.0",
     "rethinkdb": "^2.3.3",
     "xcraft-core-goblin": "^2.0.0"
   },
