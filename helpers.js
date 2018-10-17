@@ -48,11 +48,17 @@ function _escapeRegExp(str) {
   return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&');
 }
 
-function buildRegexFilter(filter, regex) {
+function buildFilterReql(filter, regex) {
   return entry =>
     _constructFilterReql(entry, filter, value => regex(_escapeRegExp(value)));
 }
 
+function buildOrderByReql(key, dir) {
+  const r = require('rethinkdb');
+  return r[dir](key);
+}
+
 module.exports = {
-  buildRegexFilter: buildRegexFilter,
+  buildFilterReql: buildFilterReql,
+  buildOrderByReql: buildOrderByReql,
 };
