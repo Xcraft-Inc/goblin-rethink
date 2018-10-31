@@ -53,9 +53,15 @@ function buildFilterReql(filter, regex) {
     _constructFilterReql(entry, filter, value => regex(_escapeRegExp(value)));
 }
 
-function buildOrderByReql(key, dir) {
+function buildOrderByReql(key, dir, indexed) {
   const r = require('rethinkdb');
-  return {index: r[dir](key)};
+  const reql = r[dir](key);
+
+  if (indexed) {
+    return {index: reql};
+  } else {
+    return reql;
+  }
 }
 
 module.exports = {
