@@ -1,5 +1,7 @@
 'use strict';
 
+const _ = require('lodash');
+
 function _constructFilterReql(entry, filterObj, filterRegex) {
   function _constructNestedObject(key) {
     const subfields = key.split('.');
@@ -28,18 +30,14 @@ function _constructFilterReql(entry, filterObj, filterRegex) {
     }
   }
 
-  const validKeys = Object.keys(filterObj).filter(
-    key => filterObj[key] != undefined && filterObj[key] !== ''
-  );
+  const keys = Object.keys(filterObj);
 
-  if (validKeys.length === 0) {
+  if (keys.length === 0) {
     return {};
   } else {
     return _construct(
-      validKeys.slice(1),
-      _constructNestedObject(validKeys[0]).match(
-        filterRegex(filterObj[validKeys[0]])
-      )
+      keys.slice(1),
+      _constructNestedObject(keys[0]).match(filterRegex(filterObj[keys[0]]))
     );
   }
 }
@@ -49,8 +47,26 @@ function _escapeRegExp(str) {
 }
 
 function buildFilterReql(filter, regex) {
+  function _constructValidKeys(obj, path, validKeys) {
+    if (obj == undefined || obj === '') {
+      return;
+    } else if (typeof obj === 'object') {
+      Object.keys(obj).forEach(key =>
+        _constructValidKeys(obj[key], `${path}.${key}`, validKeys)
+      );
+    } else {
+      // primitive type
+      validKeys[_.trimStart(path, '.')] = obj;
+    }
+  }
+
+  const validKeys = {};
+  _constructValidKeys(filter, '', validKeys);
+
   return entry =>
-    _constructFilterReql(entry, filter, value => regex(_escapeRegExp(value)));
+    _constructFilterReql(entry, validKeys, value =>
+      regex(_escapeRegExp(value))
+    );
 }
 
 function buildOrderByReql(key, dir, indexed) {
