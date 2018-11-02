@@ -2,19 +2,19 @@
 
 const _ = require('lodash');
 
-function _constructFilterReql(entry, filterObj, filterRegex) {
-  function _constructNestedObject(key) {
-    const subfields = key.split('.');
-    let nestedObj = null;
+function buildNestedFieldReql(path, reql) {
+  const subfields = path.split('.');
+  let nestedField = null;
 
-    for (let subfield of subfields) {
-      nestedObj =
-        nestedObj == undefined ? entry(subfield) : nestedObj(subfield);
-    }
-
-    return nestedObj;
+  for (let subfield of subfields) {
+    nestedField =
+      nestedField == undefined ? reql(subfield) : nestedField(subfield);
   }
 
+  return nestedField;
+}
+
+function _constructFilterReql(entry, filterObj, filterRegex) {
   function _construct(_keys, _reql) {
     if (_keys.length === 0) {
       return _reql;
@@ -22,7 +22,7 @@ function _constructFilterReql(entry, filterObj, filterRegex) {
       return _construct(
         _keys.slice(1),
         _reql.and(
-          _constructNestedObject(_keys[0]).match(
+          buildNestedFieldReql(_keys[0], entry).match(
             filterRegex(filterObj[_keys[0]])
           )
         )
@@ -37,7 +37,9 @@ function _constructFilterReql(entry, filterObj, filterRegex) {
   } else {
     return _construct(
       keys.slice(1),
-      _constructNestedObject(keys[0]).match(filterRegex(filterObj[keys[0]]))
+      buildNestedFieldReql(keys[0], entry).match(
+        filterRegex(filterObj[keys[0]])
+      )
     );
   }
 }
@@ -71,16 +73,17 @@ function buildFilterReql(filter, regex) {
 
 function buildOrderByReql(key, dir, indexed) {
   const r = require('rethinkdb');
-  const reql = r[dir](key);
+  const fieldReql = buildNestedFieldReql(key, r.row);
 
   if (indexed) {
-    return {index: reql};
+    return {index: r[dir](fieldReql)};
   } else {
-    return reql;
+    return r[dir](fieldReql.downcase());
   }
 }
 
 module.exports = {
+  buildNestedFieldReql: buildNestedFieldReql,
   buildFilterReql: buildFilterReql,
   buildOrderByReql: buildOrderByReql,
 };
