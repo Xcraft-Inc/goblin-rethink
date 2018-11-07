@@ -7,8 +7,7 @@ function buildNestedFieldReql(path, reql) {
   let nestedField = null;
 
   for (let subfield of subfields) {
-    nestedField =
-      nestedField == undefined ? reql(subfield) : nestedField(subfield);
+    nestedField = !nestedField ? reql(subfield) : nestedField(subfield);
   }
 
   return nestedField;
@@ -50,7 +49,7 @@ function _escapeRegExp(str) {
 
 function buildFilterReql(filter, regex) {
   function _constructValidKeys(obj, path, validKeys) {
-    if (obj == undefined || obj === '') {
+    if (!obj) {
       return;
     } else if (typeof obj === 'object') {
       Object.keys(obj).forEach(key =>
