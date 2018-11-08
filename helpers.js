@@ -47,7 +47,7 @@ function _escapeRegExp(str) {
   return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&');
 }
 
-function buildFilterReql(filter, regex) {
+function buildFilterReql(filter, regex, escapeValues) {
   function _constructValidKeys(obj, path, validKeys) {
     if (!obj) {
       return;
@@ -66,7 +66,11 @@ function buildFilterReql(filter, regex) {
 
   return entry =>
     _constructFilterReql(entry, validKeys, value =>
-      regex(_escapeRegExp(value))
+      regex(
+        escapeValues === undefined || escapeValues === true
+          ? _escapeRegExp(value)
+          : value
+      )
     );
 }
 
