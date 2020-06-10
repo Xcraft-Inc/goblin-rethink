@@ -14,7 +14,7 @@
     }
   },
   "dependencies": {
-    "rethinkdb": "^2.3.3",
+    "rethinkdbdash": "^2.3.31",
     "xcraft-core-goblin": "^3.0.0"
   },
   "devDependencies": {
