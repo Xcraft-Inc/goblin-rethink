@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "gigawatts": "^4.0.5",
-    "rethinkdb-ts": "^2.4.2",
+    "rethinkdb-ts": "2.4.4",
     "xcraft-core-busclient": "^4.0.1",
     "xcraft-core-goblin": "^4.0.1"
   },
