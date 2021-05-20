@@ -15,14 +15,24 @@ const logicHandlers = {
       id: action.get('id'),
       src: '',
       res: '',
-      srcErrors: '',
+      lines: [],
+      printStatus: '',
     });
   },
   update: (state, action) => {
     return state.set('src', action.get('src'));
   },
+  print: (state, action) => {
+    return state.push('lines', JSON.stringify(action.get('line'), null, 0));
+  },
+  printStatus: (state, action) => {
+    return state.set('printStatus', `...${action.get('printCounter')}`);
+  },
   run: (state, action) => {
     return state.set('res', JSON.stringify(action.get('res'), null, 2));
+  },
+  clearLastRun: (state) => {
+    return state.set('lines', []).set('res', '');
   },
 };
 
@@ -36,6 +46,7 @@ Goblin.registerQuest(goblinName, 'update', function (quest, src) {
 });
 
 Goblin.registerQuest(goblinName, 'run', function* (quest, next) {
+  quest.dispatch('clearLastRun');
   const context = {quest};
   vm.createContext(context);
   const src = quest.goblin.getState().get('src');
@@ -52,17 +63,37 @@ Goblin.registerQuest(goblinName, 'run', function* (quest, next) {
     querySrc: src,
   };
   worker.send(msg);
-  const res = yield worker.on('message', next.arg(0));
-  switch (res.type) {
-    case 'data': {
-      quest.do({res: res.data});
-      break;
+  const ended = next.parallel();
+  let printCounter = 0;
+  worker.on('message', (res) => {
+    switch (res.type) {
+      case 'data': {
+        quest.do({res: res.data});
+        break;
+      }
+      case 'print': {
+        //TODO: param.
+        if (printCounter < 100) {
+          quest.dispatch('print', {line: res.line});
+        } else {
+          quest.dispatch('printStatus', {printCounter});
+        }
+        printCounter++;
+        break;
+      }
+      case 'error': {
+        quest.dispatch('print', {line: res.message});
+        ended();
+        break;
+      }
+      case 'end': {
+        ended();
+        break;
+      }
     }
-    case 'error': {
-      quest.do({res: res.message});
-      break;
-    }
-  }
+  });
+  yield next.sync();
+  console.log('done');
 });
 
 Goblin.registerQuest(goblinName, 'delete', function (quest) {});

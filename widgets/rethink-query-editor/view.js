@@ -8,29 +8,61 @@ import Button from 'goblin-gadgets/widgets/button/widget.js';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import prettier from 'prettier';
 
-class ResultViewNC extends Widget {
+class ConsoleLineNC extends Widget {
   constructor() {
     super(...arguments);
   }
 
   render() {
+    const {index, line} = this.props;
     return (
-      <Container
-        height="100%"
-        width="100%"
-        grow="1"
-        backgroundColor="lightgrey"
-      >
-        {this.props.res}
-      </Container>
+      <React.Fragment>
+        {index} {line}
+        <br />
+      </React.Fragment>
     );
   }
 }
 
-const ResultView = Widget.connect((state, prop) => {
-  const res = state.get(`backend.${prop.id}.res`);
-  return {res};
-})(ResultViewNC);
+const ConsoleLine = Widget.connect((state, prop) => {
+  const line = state.get(`backend.${prop.id}.lines[${prop.index}]`);
+  return {line};
+})(ConsoleLineNC);
+
+class ConsoleNC extends Widget {
+  constructor() {
+    super(...arguments);
+  }
+
+  render() {
+    const {id, lines, printStatus} = this.props;
+    const console = {
+      font: '16px/1 monospace',
+      whiteSpace: 'break-spaces',
+      overflow: 'auto',
+      height: '100%',
+      width: '100%',
+      userSelect: 'text',
+    };
+    return (
+      <div style={console}>
+        {lines.map((l, k) => (
+          <ConsoleLine id={id} key={k} index={l} />
+        ))}
+        <small style={{userSelect: 'text'}}>{printStatus}</small>
+      </div>
+    );
+  }
+}
+
+const Console = Widget.connect((state, prop) => {
+  const lines = state.get(`backend.${prop.id}.lines`);
+  const printStatus = state.get(`backend.${prop.id}.printStatus`);
+  if (!lines) {
+    return {lines: [], printStatus: ''};
+  }
+  return {lines: Array.from(lines.keySeq()), printStatus};
+})(ConsoleNC);
 class RethinkQueryEditor extends Widget {
   constructor() {
     super(...arguments);
@@ -57,6 +89,19 @@ class RethinkQueryEditor extends Widget {
       this.model.setValue(src);
     } catch (err) {
       console.error(err.stack);
+      this.editor.deltaDecorations(
+        [],
+        [
+          {
+            range: new monaco.Range(3, 1, 3, 1),
+            options: {
+              isWholeLine: true,
+              className: 'prettierError',
+              glyphMarginClassName: 'prettierError',
+            },
+          },
+        ]
+      );
     }
   }
 
@@ -108,7 +153,6 @@ class RethinkQueryEditor extends Widget {
     //////////////////////////////////////
     function* transform(row) {
       row.ok = true;
-      print(row);
       return row;
     }
 
@@ -118,14 +162,8 @@ class RethinkQueryEditor extends Widget {
     //
     // Csv	 create Csv output
     //////////////////////////////////////
-    const output1 = new Csv('ok.csv');
-    const output2 = new Csv('ko.csv');
     function* load(row) {
-      if(row.ok){
-        output1.insert(row);
-      }else{
-        output2.insert(row);
-      }
+      print(row);
     }
     `;
 
@@ -137,47 +175,6 @@ class RethinkQueryEditor extends Widget {
       this.props.onValueChange(src);
       this.update(src);
     });
-
-    /*function createSuggestions(range) {
-      // returning a static list of proposals, not even looking at the prefix (filtering is done by the Monaco editor),
-      // here you could do a server side lookup
-      return [
-        {
-          label: '"do"',
-          kind: monaco.languages.CompletionItemKind.Function,
-          documentation: 'Call the reducer',
-          insertText: '"quest.do()',
-          range: range,
-        },
-      ];
-    }
-
-    monaco.languages.registerCompletionItemProvider('javascript', {
-      provideCompletionItems: function (model, position) {
-        var textUntilPosition = model.getValueInRange({
-          startLineNumber: 1,
-          startColumn: 1,
-          endLineNumber: position.lineNumber,
-          endColumn: position.column,
-        });
-        console.log(textUntilPosition);
-        var match = textUntilPosition.match(/.quest\.$/g);
-        if (!match) {
-          return {suggestions: []};
-        }
-        console.log('match');
-        var word = model.getWordUntilPosition(position);
-        var range = {
-          startLineNumber: position.lineNumber,
-          endLineNumber: position.lineNumber,
-          startColumn: word.startColumn,
-          endColumn: word.endColumn,
-        };
-        return {
-          suggestions: [createSuggestions(range)],
-        };
-      },
-    });*/
 
     this.editor = monaco.editor.create(this.editorElement, {
       language: 'javascript',
@@ -224,8 +221,8 @@ class RethinkQueryEditor extends Widget {
               ref={this.assign}
             />
           </Container>
-          <Container kind="column" height="100%" width="100%">
-            <ResultView id={this.props.id} />
+          <Container kind="column" height="80%" width="100%">
+            <Console id={this.props.id} />
           </Container>
         </Container>
       </Container>
