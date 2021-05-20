@@ -5,6 +5,7 @@ const vm = require('vm');
 const Goblin = require('xcraft-core-goblin');
 const {mkdir} = require('xcraft-core-fs');
 const path = require('path');
+const jobTemplate = require('../../entities/data/jobTemplate.js');
 
 // Define initial logic values
 const logicState = {};
@@ -14,14 +15,16 @@ const logicHandlers = {
   create: (state, action) => {
     return state.set('', {
       id: action.get('id'),
-      src: '',
+      jobId: action.get('jobId'),
+      name: action.get('name'),
+      source: action.get('source'),
       res: '',
       lines: [],
       printStatus: '',
     });
   },
   update: (state, action) => {
-    return state.set('src', action.get('src'));
+    return state.set('source', action.get('src'));
   },
   print: (state, action) => {
     return state.push('lines', JSON.stringify(action.get('line'), null, 0));
@@ -37,17 +40,31 @@ const logicHandlers = {
   },
 };
 
-Goblin.registerQuest(goblinName, 'create', function* (quest, desktopId) {
-  quest.do();
+Goblin.registerQuest(goblinName, 'create', function* (
+  quest,
+  desktopId,
+  rethinkJobId = null
+) {
   const workshopAPI = quest.getAPI('workshop');
   const storageRootPath = yield workshopAPI.getMandateStorageRootPath({
     desktopId,
   });
+
   if (storageRootPath) {
     const exportPath = path.join(storageRootPath, 'exports', 'ETL');
     mkdir(exportPath);
     quest.goblin.setX('exportPath', exportPath);
   }
+
+  let source = jobTemplate;
+  let name = 'newJob';
+  if (rethinkJobId) {
+    const jobAPI = quest.getAPI(rethinkJobId);
+    const jobData = yield jobAPI.get();
+    source = jobData.source;
+    name = jobData.name;
+  }
+  quest.do({jobId: rethinkJobId, source, name});
   return quest.goblin.id;
 });
 
@@ -59,7 +76,7 @@ Goblin.registerQuest(goblinName, 'run', function* (quest, next) {
   quest.dispatch('clearLastRun');
   const context = {quest};
   vm.createContext(context);
-  const src = quest.goblin.getState().get('src');
+  const src = quest.goblin.getState().get('source');
 
   const {fork} = require('child_process');
   const path = require('path');

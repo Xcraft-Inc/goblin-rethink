@@ -129,45 +129,7 @@ class RethinkQueryEditor extends Widget {
   }
 
   init() {
-    const templateSrc = `
-    //////////////////////////////////////
-    // Extraction Step
-    //
-    // available in scope:
-    // con	 rethinkdb connection object
-    // r	   rethinkdb r query object
-    // dir	 function like console.dir
-    //
-    //////////////////////////////////////
-    function* extract(next){
-      const q = r.db('polypheme').table('customer');
-      return yield q.run(con, next);
-    }
-    
-    //////////////////////////////////////
-    // Transform Step
-    //
-    // Here you can transform
-    // print	 print in IDE
-    //////////////////////////////////////
-    function* transform(row) {
-      row.ok = true;
-      return row;
-    }
-
-
-    //////////////////////////////////////
-    // Load Step (output)
-    //
-    // csv	 create CSV output
-    //////////////////////////////////////
-    const output1 = csv('output1.csv');
-
-    function* load(row) {
-      print(row);
-      yield output1.insert(row);
-    }
-    `;
+    const templateSrc = this.props.source;
 
     const model = monaco.editor.createModel(templateSrc, 'javascript');
     this.model = model;
@@ -195,12 +157,30 @@ class RethinkQueryEditor extends Widget {
   }
 
   render() {
+    const {name} = this.props;
     return (
       <Container kind="pane" height="100%">
+        <h1>{name}</h1>
         <Container kind="row" grow="1">
           <Button
-            text="FORMAT (ctrl+f)"
-            glyph="solid/edit"
+            text="LOAD"
+            glyph="solid/save"
+            width="160px"
+            active={false}
+            kind="subaction"
+            onClick={this.format}
+          />
+          <Button
+            text="SAVE (ctrl+s)"
+            glyph="solid/save"
+            width="160px"
+            active={false}
+            kind="subaction"
+            onClick={this.format}
+          />
+          <Button
+            text="SAVE AS"
+            glyph="solid/save"
             width="160px"
             active={false}
             kind="subaction"
@@ -232,6 +212,33 @@ class RethinkQueryEditor extends Widget {
   }
 }
 
+const EditorLoaderNC = (props) => {
+  if (!props.loaded) {
+    return null;
+  }
+  return (
+    <RethinkQueryEditor
+      id={props.id}
+      desktopId={props.desktopId}
+      onValueChange={() => null}
+      jobId={props.jobId}
+      name={props.name}
+      source={props.source}
+    />
+  );
+};
+
+const EditorLoader = Widget.connect((state, prop) => {
+  const ide = state.get(`backend.${prop.id}`);
+
+  if (!ide) {
+    return {loaded: false};
+  } else {
+    const {name, source, jobId} = ide.pick('name', 'source', 'jobId');
+    return {loaded: true, name, source, jobId};
+  }
+})(EditorLoaderNC);
+
 class PlaygroundEditorView extends View {
   constructor() {
     super(...arguments);
@@ -242,11 +249,7 @@ class PlaygroundEditorView extends View {
     return (
       <Container kind="row" grow="1" width="100%">
         <Container kind="column" height="100%" grow="1">
-          <RethinkQueryEditor
-            id={workitemId}
-            desktopId={desktopId}
-            onValueChange={() => null}
-          />
+          <EditorLoader id={workitemId} desktopId={desktopId} />
         </Container>
       </Container>
     );
