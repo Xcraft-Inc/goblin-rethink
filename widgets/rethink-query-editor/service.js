@@ -2,8 +2,9 @@
 
 const goblinName = 'rethink-query-editor';
 const vm = require('vm');
-
 const Goblin = require('xcraft-core-goblin');
+const {mkdir} = require('xcraft-core-fs');
+const path = require('path');
 
 // Define initial logic values
 const logicState = {};
@@ -36,8 +37,17 @@ const logicHandlers = {
   },
 };
 
-Goblin.registerQuest(goblinName, 'create', function (quest) {
+Goblin.registerQuest(goblinName, 'create', function* (quest, desktopId) {
   quest.do();
+  const workshopAPI = quest.getAPI('workshop');
+  const storageRootPath = yield workshopAPI.getMandateStorageRootPath({
+    desktopId,
+  });
+  if (storageRootPath) {
+    const exportPath = path.join(storageRootPath, 'exports', 'ETL');
+    mkdir(exportPath);
+    quest.goblin.setX('exportPath', exportPath);
+  }
   return quest.goblin.id;
 });
 
@@ -56,11 +66,13 @@ Goblin.registerQuest(goblinName, 'run', function* (quest, next) {
   const worker = fork(path.join(__dirname, 'worker.js'), [], {
     execArgv: ['--inspect=' + (process.debugPort + 1)],
   });
+
   const msg = {
     host: 'localhost',
     port: '28015',
     queryFileName: 'test.rdb',
     querySrc: src,
+    exportPath: quest.goblin.getX('exportPath'),
   };
   worker.send(msg);
   const ended = next.parallel();

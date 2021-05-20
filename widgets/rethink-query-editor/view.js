@@ -137,10 +137,9 @@ class RethinkQueryEditor extends Widget {
     // con	 rethinkdb connection object
     // r	   rethinkdb r query object
     // dir	 function like console.dir
-    // next	 callback for async calls
     //
     //////////////////////////////////////
-    function* extract(){
+    function* extract(next){
       const q = r.db('polypheme').table('customer');
       return yield q.run(con, next);
     }
@@ -160,10 +159,13 @@ class RethinkQueryEditor extends Widget {
     //////////////////////////////////////
     // Load Step (output)
     //
-    // Csv	 create Csv output
+    // csv	 create CSV output
     //////////////////////////////////////
+    const output1 = csv('output1.csv');
+
     function* load(row) {
       print(row);
+      yield output1.insert(row);
     }
     `;
 
