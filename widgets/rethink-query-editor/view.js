@@ -71,11 +71,17 @@ class RethinkQueryEditor extends Widget {
     this.update = this.update.bind(this);
     this.run = this.run.bind(this);
     this.format = this.format.bind(this);
+    this.save = this.save.bind(this);
     this.editorElement = undefined;
   }
 
   run() {
     this.do('run');
+  }
+
+  save() {
+    this.format();
+    this.do('save');
   }
 
   update(value) {
@@ -176,7 +182,7 @@ class RethinkQueryEditor extends Widget {
             width="160px"
             active={false}
             kind="subaction"
-            onClick={this.format}
+            onClick={this.save}
           />
           <Button
             text="SAVE AS"

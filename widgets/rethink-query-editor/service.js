@@ -35,6 +35,9 @@ const logicHandlers = {
   run: (state, action) => {
     return state.set('res', JSON.stringify(action.get('res'), null, 2));
   },
+  save: (state, action) => {
+    return state.set('jobId', action.get('jobId'));
+  },
   clearLastRun: (state) => {
     return state.set('lines', []).set('res', '');
   },
@@ -54,6 +57,7 @@ Goblin.registerQuest(goblinName, 'create', function* (
     const exportPath = path.join(storageRootPath, 'exports', 'ETL');
     mkdir(exportPath);
     quest.goblin.setX('exportPath', exportPath);
+    //TODO: list files
   }
 
   let source = jobTemplate;
@@ -61,8 +65,8 @@ Goblin.registerQuest(goblinName, 'create', function* (
   if (rethinkJobId) {
     const jobAPI = quest.getAPI(rethinkJobId);
     const jobData = yield jobAPI.get();
-    source = jobData.source;
-    name = jobData.name;
+    source = jobData.get('source');
+    name = jobData.get('name');
   }
   quest.do({jobId: rethinkJobId, source, name});
   return quest.goblin.id;
@@ -70,6 +74,18 @@ Goblin.registerQuest(goblinName, 'create', function* (
 
 Goblin.registerQuest(goblinName, 'update', function (quest, src) {
   quest.do({src});
+});
+
+Goblin.registerQuest(goblinName, 'save', function* (quest, desktopId) {
+  const {source, jobId} = quest.goblin.getState().pick('source', 'jobId');
+  if (!jobId) {
+    const jobId = `rethinkJob@${quest.uuidV4()}`;
+    yield quest.createEntity(jobId, {name: 'new job', source});
+    quest.do({jobId});
+  } else {
+    const jobAPI = yield quest.create('rethinkJob', {id: jobId, desktopId});
+    yield jobAPI.change({path: 'source', newValue: source});
+  }
 });
 
 Goblin.registerQuest(goblinName, 'run', function* (quest, next) {
