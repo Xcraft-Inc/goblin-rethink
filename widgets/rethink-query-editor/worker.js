@@ -1,7 +1,7 @@
 const r = require('rethinkdb');
 const watt = require('watt');
 const vm = require('vm');
-const {CSV} = require('goblin-workshop');
+const {CSVOutput, JSONOutput} = require('goblin-workshop');
 const {js} = require('xcraft-core-utils');
 const runner = watt(function* (msg, next) {
   const {host, port, queryFileName, querySrc, exportPath} = msg;
@@ -21,7 +21,12 @@ const runner = watt(function* (msg, next) {
       watt: watt,
       end: () => process.send({type: 'end'}),
       csv: (fileName, config) => {
-        const inst = CSV.prepare(exportPath)(fileName, config);
+        const inst = CSVOutput.prepare(exportPath)(fileName, config);
+        disposer.push(inst.dispose);
+        return inst;
+      },
+      json: (fileName) => {
+        const inst = JSONOutput.prepare(exportPath)(fileName);
         disposer.push(inst.dispose);
         return inst;
       },
