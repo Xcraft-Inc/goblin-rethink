@@ -18,6 +18,7 @@ const logicHandlers = {
       jobId: action.get('jobId'),
       name: action.get('name'),
       source: action.get('source'),
+      isRunning: false,
       res: '',
       lines: [],
       printStatus: '',
@@ -40,6 +41,9 @@ const logicHandlers = {
   },
   clearLastRun: (state) => {
     return state.set('lines', []).set('res', '');
+  },
+  setRunning: (state, action) => {
+    return state.set('isRunning', action.get('isRunning'));
   },
 };
 
@@ -90,62 +94,69 @@ Goblin.registerQuest(goblinName, 'save', function* (quest, desktopId) {
 
 Goblin.registerQuest(goblinName, 'run', function* (quest, next) {
   quest.dispatch('clearLastRun');
-  const context = {quest};
-  vm.createContext(context);
-  const src = quest.goblin.getState().get('source');
+  let worker;
+  try {
+    quest.dispatch('setRunning', {isRunning: true});
+    const context = {quest};
+    vm.createContext(context);
+    const src = quest.goblin.getState().get('source');
+    const {fork} = require('child_process');
 
-  const {fork} = require('child_process');
-
-  let execArgv = [];
-  if (process.env.NODE_ENV === 'development') {
-    execArgv.push('--inspect=' + (process.debugPort + 1));
-  }
-
-  const path = require('path');
-  const worker = fork(path.join(__dirname, 'worker.js'), [], {
-    execArgv,
-  });
-
-  const msg = {
-    mandate: quest.getSession(),
-    host: 'localhost',
-    port: '28015',
-    queryFileName: 'test.rdb',
-    querySrc: src,
-    exportPath: quest.goblin.getX('exportPath'),
-  };
-  worker.send(msg);
-  const ended = next.parallel();
-  let printCounter = 0;
-  worker.on('message', (res) => {
-    switch (res.type) {
-      case 'data': {
-        quest.do({res: res.data});
-        break;
-      }
-      case 'print': {
-        //TODO: param.
-        if (printCounter < 100) {
-          quest.dispatch('print', {line: res.line});
-        } else {
-          quest.dispatch('printStatus', {printCounter});
-        }
-        printCounter++;
-        break;
-      }
-      case 'error': {
-        quest.dispatch('print', {line: res.message});
-        ended();
-        break;
-      }
-      case 'end': {
-        ended();
-        break;
-      }
+    let execArgv = [];
+    if (process.env.NODE_ENV === 'development') {
+      execArgv.push('--inspect=' + (process.debugPort + 1));
     }
-  });
-  yield next.sync();
-  console.log('done');
+
+    const path = require('path');
+    worker = fork(path.join(__dirname, 'worker.js'), [], {
+      execArgv,
+    });
+
+    const msg = {
+      mandate: quest.getSession(),
+      host: 'localhost',
+      port: '28015',
+      queryFileName: 'test.rdb',
+      querySrc: src,
+      exportPath: quest.goblin.getX('exportPath'),
+    };
+    worker.send(msg);
+    const ended = next.parallel();
+    let printCounter = 0;
+    worker.on('message', (res) => {
+      switch (res.type) {
+        case 'data': {
+          quest.do({res: res.data});
+          break;
+        }
+        case 'print': {
+          //TODO: param.
+          if (printCounter < 100) {
+            quest.dispatch('print', {line: res.line});
+          } else {
+            quest.dispatch('printStatus', {printCounter});
+          }
+          printCounter++;
+          break;
+        }
+        case 'error': {
+          quest.dispatch('print', {line: res.message});
+          ended();
+          break;
+        }
+        case 'end': {
+          ended();
+          break;
+        }
+      }
+    });
+    yield next.sync();
+  } finally {
+    quest.dispatch('setRunning', {isRunning: false});
+    if (worker) {
+      worker.kill('SIGINT');
+    }
+  }
 });
 
 Goblin.registerQuest(goblinName, 'delete', function (quest) {});

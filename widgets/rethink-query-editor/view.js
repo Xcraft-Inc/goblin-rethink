@@ -111,7 +111,13 @@ class RethinkQueryEditor extends Widget {
               onUpdate={this.update}
             />
           </Container>
-          <Container kind="column" width="100%" height="100%" grow="1">
+          <Container
+            kind="column"
+            width="100%"
+            height="100%"
+            grow="1"
+            busy={this.props.isRunning}
+          >
             <Console id={this.props.id} />
           </Container>
         </Container>
@@ -141,8 +147,13 @@ const EditorLoader = Widget.connect((state, prop) => {
   if (!ide) {
     return {loaded: false};
   } else {
-    const {name, source, jobId} = ide.pick('name', 'source', 'jobId');
-    return {loaded: true, name, source, jobId};
+    const {name, source, jobId, isRunning} = ide.pick(
+      'name',
+      'source',
+      'jobId',
+      'isRunning'
+    );
+    return {loaded: true, name, source, jobId, isRunning};
   }
 })(EditorLoaderNC);
 
