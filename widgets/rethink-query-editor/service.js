@@ -95,9 +95,15 @@ Goblin.registerQuest(goblinName, 'run', function* (quest, next) {
   const src = quest.goblin.getState().get('source');
 
   const {fork} = require('child_process');
+
+  let execArgv = [];
+  if (process.env.NODE_ENV === 'development') {
+    execArgv.push('--inspect=' + (process.debugPort + 1));
+  }
+
   const path = require('path');
   const worker = fork(path.join(__dirname, 'worker.js'), [], {
-    execArgv: ['--inspect=' + (process.debugPort + 1)],
+    execArgv,
   });
 
   const msg = {
