@@ -4,13 +4,16 @@ const vm = require('vm');
 const {CSVOutput, JSONOutput} = require('goblin-workshop');
 const {js} = require('xcraft-core-utils');
 const runner = watt(function* (msg, next) {
-  const {host, port, queryFileName, querySrc, exportPath} = msg;
-  console.log('(っ◕‿◕)っ rethinkdb ✨');
-  console.log(`connecting to ${host}:${port}...`);
+  const {mandate, host, port, queryFileName, querySrc, exportPath} = msg;
+
   let conn;
   const disposer = [];
+  const user = `${mandate}-reader`;
+  const password = mandate;
   try {
-    conn = yield r.connect({host, port}, next);
+    console.log('(っ◕‿◕)っ rethinkdb ✨');
+    console.log(`connecting to ${user} to ${host}:${port}...`);
+    conn = yield r.connect({host, port, user, password}, next);
     console.log('connected ✨');
 
     const context = {

@@ -101,6 +101,7 @@ Goblin.registerQuest(goblinName, 'run', function* (quest, next) {
   });
 
   const msg = {
+    mandate: quest.getSession(),
     host: 'localhost',
     port: '28015',
     queryFileName: 'test.rdb',
