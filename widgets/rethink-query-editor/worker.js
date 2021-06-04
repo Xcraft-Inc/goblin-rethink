@@ -80,7 +80,6 @@ const runner = watt(function* (msg, next) {
 
     yield script.runInContext(context);
     console.log('done ✨');
-    process.send({type: 'end'});
   } catch (err) {
     console.error(err);
     process.send({
@@ -102,6 +101,7 @@ const runner = watt(function* (msg, next) {
         func();
       }
     }
+    process.send({type: 'end'});
   }
 });
 
