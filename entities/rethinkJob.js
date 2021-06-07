@@ -8,6 +8,13 @@ const entity = {
   properties: {
     name: {type: 'string', defaultValue: null},
     source: {type: 'string', defaultValue: jobTemplate},
+    lastRun: {type: 'datetime', defaultValue: ''},
+    status: {
+      type: 'enum',
+      values: ['good', 'bad'],
+      defaultValue: 'good',
+    },
+    lastRunStatus: {type: 'string', defaultValue: null},
   },
   summaries: {
     info: {type: 'string', defaultValue: ''},
@@ -28,6 +35,19 @@ const entity = {
       name,
       source,
     };
+  },
+  quests: {
+    updateLastRun: function* (quest, status) {
+      const {datetime} = require('xcraft-core-converters');
+      const DateConverters = datetime;
+      yield quest.me.apply({
+        patch: {
+          lastRun: DateConverters.getNowCanonical(),
+          lastRunStatus: `duration: ${status.duration}`,
+          status: status.failed ? 'bad' : 'good',
+        },
+      });
+    },
   },
 };
 

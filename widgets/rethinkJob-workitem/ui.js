@@ -10,7 +10,16 @@ function renderPanel(props) {
   return (
     <Container kind="column" grow="1">
       <Container kind="pane">
+        <Field readonly={true} labelText={T('Identifiant')} model=".id" />
         <Field labelText={T('Nom')} model=".name" />
+        <Field
+          kind="datetime"
+          readonly={true}
+          labelText={T('Dernier lancement')}
+          labelWidth="120px"
+          model=".lastRun"
+        />
+        <Field readonly={true} labelText={T('Status')} model=".lastRunStatus" />
       </Container>
       <Container kind="pane" grow="1">
         <Field
@@ -18,6 +27,7 @@ function renderPanel(props) {
           readonly={true}
           labelWidth="0px"
           grow="1"
+          rows={30}
           model=".source"
         />
       </Container>
@@ -28,6 +38,7 @@ function renderPanel(props) {
 function renderCompact(props) {
   return (
     <Container kind="row" grow="1">
+      <Field readonly={true} labelText={T('Identifiant')} model=".id" />
       <Field labelText={T('Nom')} model=".name" />
     </Container>
   );
@@ -36,6 +47,7 @@ function renderCompact(props) {
 function renderExtend(props) {
   return (
     <Container kind="column" grow="1">
+      <Field readonly={true} labelText={T('Identifiant')} model=".id" />
       <Field labelText={T('Nom')} model=".name" />
     </Container>
   );

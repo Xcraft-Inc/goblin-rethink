@@ -67,19 +67,11 @@ class RethinkQueryEditor extends Widget {
   render() {
     const {name} = this.props;
     return (
-      <Container kind="pane" height="100%">
+      <Container kind="pane" height="100%" busy={this.props.isRunning}>
         <h1>{name}</h1>
         <Container kind="row" grow="1">
           <Button
-            text="LOAD"
-            glyph="solid/save"
-            width="160px"
-            active={false}
-            kind="subaction"
-            onClick={this.format}
-          />
-          <Button
-            text="SAVE (ctrl+s)"
+            text="SAVE"
             glyph="solid/save"
             width="160px"
             active={false}
@@ -87,15 +79,7 @@ class RethinkQueryEditor extends Widget {
             onClick={this.save}
           />
           <Button
-            text="SAVE AS"
-            glyph="solid/save"
-            width="160px"
-            active={false}
-            kind="subaction"
-            onClick={this.format}
-          />
-          <Button
-            text="RUN (ctrl+r)"
+            text="RUN"
             glyph="solid/rocket"
             width="160px"
             active={false}
@@ -111,13 +95,7 @@ class RethinkQueryEditor extends Widget {
               onUpdate={this.update}
             />
           </Container>
-          <Container
-            kind="column"
-            width="100%"
-            height="100%"
-            grow="1"
-            busy={this.props.isRunning}
-          >
+          <Container kind="column" width="100%" height="100%" grow="1">
             <Console id={this.props.id} />
           </Container>
         </Container>
@@ -137,6 +115,7 @@ const EditorLoaderNC = (props) => {
       jobId={props.jobId}
       name={props.name}
       source={props.source}
+      isRunning={props.isRunning}
     />
   );
 };

@@ -1,7 +1,6 @@
 'use strict';
 
 const goblinName = 'rethink-query-editor';
-const vm = require('vm');
 const Goblin = require('xcraft-core-goblin');
 const {mkdir} = require('xcraft-core-fs');
 const path = require('path');
@@ -19,7 +18,6 @@ const logicHandlers = {
       name: action.get('name'),
       source: action.get('source'),
       isRunning: false,
-      res: '',
       lines: [],
       printStatus: '',
     });
@@ -33,14 +31,14 @@ const logicHandlers = {
   printStatus: (state, action) => {
     return state.set('printStatus', `...${action.get('printCounter')}`);
   },
-  run: (state, action) => {
-    return state.set('res', JSON.stringify(action.get('res'), null, 2));
+  run: (state) => {
+    return state;
   },
   save: (state, action) => {
     return state.set('jobId', action.get('jobId'));
   },
   clearLastRun: (state) => {
-    return state.set('lines', []).set('res', '');
+    return state.set('lines', []);
   },
   setRunning: (state, action) => {
     return state.set('isRunning', action.get('isRunning'));
@@ -93,73 +91,42 @@ Goblin.registerQuest(goblinName, 'save', function* (quest, desktopId) {
 });
 
 Goblin.registerQuest(goblinName, 'run', function* (quest, next) {
+  const state = quest.goblin.getState();
+  if (state.get('isRunning')) {
+    return;
+  }
+  quest.dispatch('setRunning', {isRunning: true});
   quest.dispatch('clearLastRun');
-  let worker;
+  yield quest.doSync();
   try {
-    quest.dispatch('setRunning', {isRunning: true});
-    const context = {quest};
-    vm.createContext(context);
+    const jobId = quest.uuidV4();
+    quest.goblin.setX('currentJobId', jobId);
     const src = quest.goblin.getState().get('source');
-    const {fork} = require('child_process');
+    const print = (payload) => quest.dispatch('print', payload);
+    const printStatus = (payload) => quest.dispatch('printStatus', payload);
 
-    let execArgv = [];
-    if (process.env.NODE_ENV === 'development') {
-      execArgv.push('--inspect=' + (process.debugPort + 1));
-    }
-
-    const path = require('path');
-    worker = fork(path.join(__dirname, 'worker.js'), [], {
-      execArgv,
-    });
-
-    const msg = {
-      mandate: quest.getSession(),
-      host: 'localhost',
-      port: '28015',
-      queryFileName: 'test.rdb',
-      querySrc: src,
+    const jobRunner = require('../../lib/etl/jobRunner.js').instance;
+    yield jobRunner.run({
+      jobId,
       exportPath: quest.goblin.getX('exportPath'),
-    };
-    worker.send(msg);
-    const ended = next.parallel();
-    let printCounter = 0;
-    worker.on('message', (res) => {
-      switch (res.type) {
-        case 'data': {
-          quest.do({res: res.data});
-          break;
-        }
-        case 'print': {
-          //TODO: param.
-          if (printCounter < 100) {
-            quest.dispatch('print', {line: res.line});
-          } else {
-            quest.dispatch('printStatus', {printCounter});
-          }
-          printCounter++;
-          break;
-        }
-        case 'error': {
-          quest.dispatch('print', {line: res.message});
-          ended();
-          break;
-        }
-        case 'end': {
-          ended();
-          break;
-        }
-      }
+      mandate: quest.getSession(),
+      src,
+      print,
+      printStatus,
     });
-    yield next.sync();
+    quest.goblin.setX('currentJobId', null);
   } finally {
     quest.dispatch('setRunning', {isRunning: false});
-    if (worker) {
-      worker.kill('SIGINT');
-    }
   }
 });
 
-Goblin.registerQuest(goblinName, 'delete', function (quest) {});
+Goblin.registerQuest(goblinName, 'delete', function (quest) {
+  const current = quest.goblin.getX('currentJobId');
+  if (current) {
+    const jobRunner = require('../../lib/etl/jobRunner.js').instance;
+    jobRunner.kill(current);
+  }
+});
 
 // Singleton
 module.exports = Goblin.configure(goblinName, logicState, logicHandlers);
