@@ -17,9 +17,9 @@
     "gigawatts": "^4.0.5",
     "piscina": "^3.0.0",
     "rethinkdb-ts": "2.4.4",
-    "xcraft-core-busclient": "^4.0.1",
-    "xcraft-core-goblin": "^4.0.1",
-    "xcraft-core-shredder": "^4.0.0"
+    "xcraft-core-busclient": "^5.0.0",
+    "xcraft-core-goblin": "^5.0.0",
+    "xcraft-core-shredder": "^5.0.0"
   },
   "devDependencies": {
     "prettier": "2.0.4",
