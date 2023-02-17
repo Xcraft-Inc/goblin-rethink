@@ -1,0 +1,9 @@
+[
+  {
+    "Module": "goblin-rethink",
+    "Version": "v2.2.0",
+    "Hash": "d828711",
+    "Dev": "master",
+    "Prod": "2.2"
+  }
+]
