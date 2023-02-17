@@ -6,6 +6,7 @@ module.exports = `
 // con	 rethinkdb connection object
 // r	   rethinkdb r query object
 // print output info in the Goblin Editor
+// payload user provided payload object
 // 
 // Author:
 // Version: 
@@ -18,14 +19,14 @@ module.exports = `
 // 
 //////////////////////////////////////
 function* extract(next){
-  const q = r.db('polypheme').table('customer');
+  //TODO: change db with correct name, write a query
+  const q = r.db('<replace-me>').table('<replace-me>');
   return yield q.run(con, next);
 }
 
 //////////////////////////////////////
 // Transform Step
 // here you can:
-// - do sub queries
 // - make calculation
 // - format values
 //////////////////////////////////////

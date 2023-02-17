@@ -7,7 +7,10 @@ const entity = {
   values: {},
   properties: {
     name: {type: 'string', defaultValue: null},
-    source: {type: 'string', defaultValue: jobTemplate},
+    source: {
+      type: 'string',
+      defaultValue: jobTemplate,
+    },
     lastRun: {type: 'datetime', defaultValue: ''},
     status: {
       type: 'enum',
