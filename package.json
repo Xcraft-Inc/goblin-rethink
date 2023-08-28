@@ -1,6 +1,6 @@
 {
   "name": "goblin-rethink",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "description": "Rethinkdb for goblins",
   "main": "lib/builders.js",
   "scripts": {
